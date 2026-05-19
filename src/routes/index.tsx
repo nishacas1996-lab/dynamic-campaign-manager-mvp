@@ -175,7 +175,7 @@ function Dashboard() {
           </div>
         </section>
 
-        <section className="col-span-12 lg:col-span-8">
+        <section className="col-span-12">
           <SectionLabel icon={Activity}>Line Items · {cities.length} cities × {CREATIVES.length} creatives</SectionLabel>
           <div className="mt-3 rounded-lg border border-border bg-card overflow-hidden">
             <div className="overflow-x-auto">
