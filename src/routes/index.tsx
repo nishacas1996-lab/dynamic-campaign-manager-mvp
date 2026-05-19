@@ -90,7 +90,7 @@ function Dashboard() {
       const [l, w, t] = await Promise.all([
         supabase.from("line_items").select("*"),
         supabase.from("weather_cache").select("*"),
-        supabase.from("transition_logs").select("*").order("triggered_at", { ascending: false }).limit(20),
+        supabase.from("transition_logs").select("*").order("triggered_at", { ascending: false }).limit(200),
       ]);
       setItems((l.data ?? []) as LineItem[]);
       setWeather((w.data ?? []) as Weather[]);
@@ -102,6 +102,11 @@ function Dashboard() {
   const weatherByCity = new Map(weather.map((w) => [w.city, w]));
   const itemMap = new Map(items.map((i) => [i.id, i]));
   const cities = Array.from(new Set(items.map((i) => i.city))).sort();
+  // logs are pre-sorted desc by triggered_at; first occurrence per line_item_id is the latest
+  const latestLogByItem = new Map<number, TransitionLog>();
+  for (const log of logs) {
+    if (!latestLogByItem.has(log.line_item_id)) latestLogByItem.set(log.line_item_id, log);
+  }
 
   const activeCount = items.filter((i) => i.state === "active").length;
   const totalBudget = items.reduce((s, i) => s + Number(i.daily_budget), 0);
