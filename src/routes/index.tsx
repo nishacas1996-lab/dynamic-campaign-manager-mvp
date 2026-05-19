@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Cloud, CloudRain, CloudSnow, Sun, Zap, Droplets, Thermometer,
-  Activity, PauseCircle, PlayCircle, History, Radio,
+  Activity, PauseCircle, PlayCircle, History, Radio, Settings2, X,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
