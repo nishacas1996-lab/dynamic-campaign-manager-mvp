@@ -183,6 +183,20 @@ function Dashboard() {
             <Stat label="ACTIVE" value={`${activeCount}/${items.length}`} accent="success" />
             <Stat label="BUDGET LIVE" value={`$${activeBudget}`} />
             <Stat label="BUDGET TOTAL" value={`$${totalBudget}`} />
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-muted-foreground tracking-wider">SYNC</span>
+              <span className="tabular-nums text-muted-foreground">
+                {lastSync ? `${fmtAgo(lastSync.toISOString())}` : "—"}
+              </span>
+            </div>
+            <button
+              onClick={runCycle}
+              disabled={cycling}
+              className="inline-flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-mono uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {cycling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+              {cycling ? "Running…" : "Run Decision Cycle"}
+            </button>
             <div className="flex items-center gap-2 text-success">
               <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
               LIVE
