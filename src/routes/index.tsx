@@ -243,48 +243,68 @@ function Dashboard() {
           </div>
         </section>
 
-        <section className="col-span-12 lg:col-span-4">
-          <SectionLabel icon={History}>Transition Log</SectionLabel>
-          <div className="mt-3 rounded-lg border border-border bg-card divide-y divide-border max-h-[640px] overflow-y-auto">
-            {logs.map((e) => {
-              const li = itemMap.get(e.line_item_id);
-              const becameActive = e.to_state === "active";
-              const snap = e.weather_snap ?? {};
-              return (
-                <div key={e.id} className="p-3 hover:bg-surface-2/50">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2 text-xs font-mono">
-                      {becameActive ? (
-                        <PlayCircle className="h-3.5 w-3.5 text-success" />
-                      ) : (
-                        <PauseCircle className="h-3.5 w-3.5 text-warning" />
-                      )}
-                      <span className="text-muted-foreground">{e.from_state}</span>
-                      <span className="text-muted-foreground/50">→</span>
-                      <span className={becameActive ? "text-success" : "text-warning"}>
-                        {e.to_state}
-                      </span>
-                    </div>
-                    <span className="text-[10px] font-mono text-muted-foreground">
-                      {fmtAgo(e.triggered_at)}
-                    </span>
-                  </div>
-                  <div className="mt-1.5 text-xs">
-                    <span className="font-medium">{li?.city ?? snap.city ?? "—"}</span>
-                    <span className="text-muted-foreground">
-                      {" · "}
-                      {li ? CREATIVE_LABEL[li.creative_id] ?? li.creative_id : "—"}
-                    </span>
-                  </div>
-                  <div className="mt-1 text-xs text-foreground/70 leading-snug">{e.reason}</div>
-                  {snap.condition && (
-                    <div className="mt-1.5 text-[10px] font-mono text-muted-foreground">
-                      snap: {snap.temp_c}°C · {snap.precip_mm}mm · {snap.condition}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+        <section className="col-span-12">
+          <SectionLabel icon={History}>Audit Log · last 20 transitions</SectionLabel>
+          <div className="mt-3 rounded-lg border border-border bg-card overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-surface-2 text-xs font-mono uppercase tracking-wider text-muted-foreground">
+                  <tr>
+                    <th className="text-left px-4 py-2.5">Time</th>
+                    <th className="text-left px-4 py-2.5">City</th>
+                    <th className="text-left px-4 py-2.5">Creative</th>
+                    <th className="text-left px-4 py-2.5">From → To</th>
+                    <th className="text-left px-4 py-2.5 pr-4 w-[45%]">Reason</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {logs.slice(0, 20).map((e) => {
+                    const li = itemMap.get(e.line_item_id);
+                    const snap = e.weather_snap ?? {};
+                    const becameActive = e.to_state === "active";
+                    const Arrow = becameActive ? PlayCircle : PauseCircle;
+                    return (
+                      <tr
+                        key={e.id}
+                        className="border-t border-border/60 hover:bg-surface-2/50 transition-colors"
+                      >
+                        <td className="px-4 py-2.5 align-top font-mono text-xs text-muted-foreground whitespace-nowrap">
+                          {fmtAgo(e.triggered_at)}
+                        </td>
+                        <td className="px-4 py-2.5 align-top font-medium text-xs">
+                          {li?.city ?? snap.city ?? "—"}
+                        </td>
+                        <td className="px-4 py-2.5 align-top font-mono text-xs text-muted-foreground">
+                          {li ? CREATIVE_LABEL[li.creative_id] ?? li.creative_id : "—"}
+                        </td>
+                        <td className="px-4 py-2.5 align-top">
+                          <span className="inline-flex items-center gap-1.5 font-mono text-xs">
+                            <Arrow
+                              className={`h-3.5 w-3.5 ${
+                                becameActive ? "text-success" : "text-warning"
+                              }`}
+                            />
+                            <span className="text-muted-foreground">{e.from_state}</span>
+                            <span className="text-muted-foreground/50">→</span>
+                            <span className={becameActive ? "text-success" : "text-warning"}>
+                              {e.to_state}
+                            </span>
+                          </span>
+                        </td>
+                        <td className="px-4 py-2.5 pr-4 align-top text-xs text-foreground/80 leading-snug">
+                          <div>{e.reason}</div>
+                          {snap.condition && (
+                            <div className="mt-1 text-[10px] font-mono text-muted-foreground">
+                              snap: {snap.temp_c}°C · {snap.precip_mm}mm · {snap.condition}
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
             {!loading && logs.length === 0 && (
               <div className="p-4 text-xs text-muted-foreground font-mono">No transitions yet</div>
             )}
