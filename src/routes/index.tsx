@@ -84,6 +84,41 @@ function Dashboard() {
   const [weather, setWeather] = useState<Weather[]>([]);
   const [logs, setLogs] = useState<TransitionLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [overrideItem, setOverrideItem] = useState<LineItem | null>(null);
+
+  async function applyOverride(item: LineItem, toState: "active" | "paused", note: string) {
+    const fromState = item.state;
+    const w = weatherByCity.get(item.city);
+    const reason = `MANUAL OVERRIDE: ${note.trim() || "no reason provided"}`;
+    const snap = w
+      ? { city: w.city, temp_c: w.temp_c, precip_mm: w.precip_mm, condition: w.condition }
+      : { city: item.city };
+
+    const { data: updated, error: upErr } = await supabase
+      .from("line_items")
+      .update({ state: toState, updated_at: new Date().toISOString() })
+      .eq("id", item.id)
+      .select()
+      .single();
+    if (upErr) { console.error(upErr); return; }
+
+    const { data: logRow, error: logErr } = await supabase
+      .from("transition_logs")
+      .insert({
+        line_item_id: item.id,
+        from_state: fromState,
+        to_state: toState,
+        reason,
+        weather_snap: snap,
+      })
+      .select()
+      .single();
+    if (logErr) console.error(logErr);
+
+    setItems((prev) => prev.map((i) => (i.id === item.id ? (updated as LineItem) : i)));
+    if (logRow) setLogs((prev) => [logRow as TransitionLog, ...prev]);
+    setOverrideItem(null);
+  }
 
   useEffect(() => {
     (async () => {
