@@ -45,6 +45,15 @@ function conditionIcon(c: string) {
   return Sun;
 }
 
+function conditionBadge(w?: { temp_c: number; precip_mm: number }) {
+  if (!w) return { emoji: "·", label: "—", className: "bg-muted text-muted-foreground border-border" };
+  if (w.precip_mm >= 1)
+    return { emoji: "🌧", label: "Rainy", className: "bg-accent/15 text-accent border-accent/30" };
+  if (w.temp_c >= 30)
+    return { emoji: "🔥", label: "Hot", className: "bg-destructive/15 text-destructive border-destructive/30" };
+  return { emoji: "✅", label: "Normal", className: "bg-success/15 text-success border-success/30" };
+}
+
 function fmtAgo(ts: string) {
   const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
@@ -126,41 +135,38 @@ function Dashboard() {
       <main className="mx-auto max-w-[1500px] px-6 py-6 grid grid-cols-12 gap-6">
         <section className="col-span-12">
           <SectionLabel icon={Thermometer}>Weather Cache</SectionLabel>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3">
-            {cities.map((city) => {
-              const w = weatherByCity.get(city);
-              const Icon = conditionIcon(w?.condition ?? "");
-              return (
-                <div key={city} className="rounded-lg border border-border bg-card p-4">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <div className="text-sm font-medium">{city}</div>
-                      <div className="text-xs text-muted-foreground font-mono mt-0.5">
-                        {w?.condition ?? "—"}
+          <div className="mt-3 rounded-lg border border-border bg-card overflow-hidden">
+            <div className="grid grid-cols-2 md:grid-cols-4 divide-y md:divide-y-0 md:divide-x divide-border">
+              {["Mumbai", "Delhi", "Bangalore", "Chennai"].map((city) => {
+                const w = weatherByCity.get(city);
+                const badge = conditionBadge(w);
+                return (
+                  <div key={city} className="flex items-center justify-between gap-3 px-4 py-3">
+                    <div className="min-w-0">
+                      <div className="text-sm font-medium leading-tight">{city}</div>
+                      <div className="mt-1 flex items-baseline gap-3 font-mono text-xs text-muted-foreground">
+                        <span className="inline-flex items-baseline gap-1">
+                          <span className="text-lg font-semibold tabular-nums text-foreground">
+                            {w ? Math.round(w.temp_c) : "—"}
+                          </span>
+                          <span>°C</span>
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                          <Droplets className="h-3 w-3" />
+                          {w ? `${w.precip_mm}mm` : "—"}
+                        </span>
                       </div>
                     </div>
-                    <Icon className="h-6 w-6 text-accent" />
-                  </div>
-                  <div className="mt-3 flex items-baseline gap-1">
-                    <span className="text-2xl font-semibold tabular-nums">
-                      {w ? Math.round(w.temp_c) : "—"}
+                    <span
+                      className={`inline-flex items-center gap-1 rounded px-2 py-1 text-xs font-mono border whitespace-nowrap ${badge.className}`}
+                    >
+                      <span>{badge.emoji}</span>
+                      {badge.label}
                     </span>
-                    <span className="text-sm text-muted-foreground">°C</span>
                   </div>
-                  <div className="mt-2 flex gap-4 text-xs text-muted-foreground font-mono">
-                    <span className="inline-flex items-center gap-1">
-                      <Droplets className="h-3 w-3" />
-                      {w ? `${w.precip_mm}mm` : "—"}
-                    </span>
-                    {w && (
-                      <span className="text-muted-foreground/70">
-                        {fmtAgo(w.fetched_at)}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+                );
+              })}
+            </div>
           </div>
         </section>
 
