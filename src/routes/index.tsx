@@ -222,7 +222,8 @@ function Dashboard() {
                     <th className="text-left px-4 py-2.5">State</th>
                     <th className="text-left px-4 py-2.5 w-[36%]">Last Reason</th>
                     <th className="text-right px-4 py-2.5">Bid</th>
-                    <th className="text-right px-4 py-2.5 pr-4">Budget</th>
+                    <th className="text-right px-4 py-2.5">Budget</th>
+                    <th className="text-right px-4 py-2.5 pr-4 w-[1%]"></th>
                   </tr>
                 </thead>
                 <tbody>
