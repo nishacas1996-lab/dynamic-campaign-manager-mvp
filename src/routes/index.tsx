@@ -185,39 +185,55 @@ function Dashboard() {
                     <th className="text-left px-4 py-2.5">City</th>
                     <th className="text-left px-4 py-2.5">Creative</th>
                     <th className="text-left px-4 py-2.5">State</th>
-                    <th className="text-left px-4 py-2.5 w-[40%]">Reason</th>
+                    <th className="text-left px-4 py-2.5 w-[36%]">Last Reason</th>
                     <th className="text-right px-4 py-2.5">Bid</th>
                     <th className="text-right px-4 py-2.5 pr-4">Budget</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {cities.flatMap((city) =>
-                    CREATIVES.map((cr) => {
-                      const li = items.find((i) => i.city === city && i.creative_id === cr);
-                      if (!li) return null;
-                      const w = weatherByCity.get(city);
+                  {cities.flatMap((city, cityIdx) => {
+                    const cityItems = CREATIVES
+                      .map((cr) => items.find((i) => i.city === city && i.creative_id === cr))
+                      .filter((x): x is LineItem => Boolean(x));
+                    const w = weatherByCity.get(city);
+                    return cityItems.map((li, idx) => {
+                      const isFirst = idx === 0;
+                      const lastLog = latestLogByItem.get(li.id);
+                      const lastReason = lastLog?.reason ?? reasonFor(li, w);
                       return (
-                        <tr key={li.id} className="border-t border-border hover:bg-surface-2/50 transition-colors">
-                          <td className="px-4 py-3 font-medium">{city}</td>
-                          <td className="px-4 py-3 font-mono text-xs text-muted-foreground">
-                            {CREATIVE_LABEL[cr] ?? cr}
+                        <tr
+                          key={li.id}
+                          className={`hover:bg-surface-2/50 transition-colors ${
+                            isFirst && cityIdx > 0 ? "border-t-2 border-border" : "border-t border-border/60"
+                          }`}
+                        >
+                          <td className="px-4 py-3 align-top font-medium">
+                            {isFirst ? city : <span className="text-transparent select-none">{city}</span>}
                           </td>
-                          <td className="px-4 py-3">
+                          <td className="px-4 py-3 align-top font-mono text-xs text-muted-foreground">
+                            {CREATIVE_LABEL[li.creative_id] ?? li.creative_id}
+                          </td>
+                          <td className="px-4 py-3 align-top">
                             <StateBadge state={li.state} />
                           </td>
-                          <td className="px-4 py-3 text-xs text-foreground/80 leading-snug">
-                            {reasonFor(li, w)}
+                          <td className="px-4 py-3 align-top text-xs text-foreground/80 leading-snug">
+                            <div>{lastReason}</div>
+                            {lastLog && (
+                              <div className="mt-1 text-[10px] font-mono text-muted-foreground">
+                                {lastLog.from_state} → {lastLog.to_state} · {fmtAgo(lastLog.triggered_at)}
+                              </div>
+                            )}
                           </td>
-                          <td className="px-4 py-3 text-right tabular-nums font-mono text-xs">
+                          <td className="px-4 py-3 align-top text-right tabular-nums font-mono text-xs">
                             ${Number(li.bid).toFixed(2)}
                           </td>
-                          <td className="px-4 py-3 pr-4 text-right tabular-nums font-mono text-xs">
+                          <td className="px-4 py-3 pr-4 align-top text-right tabular-nums font-mono text-xs">
                             ${Number(li.daily_budget).toFixed(0)}
                           </td>
                         </tr>
                       );
-                    }),
-                  )}
+                    });
+                  })}
                 </tbody>
               </table>
             </div>
