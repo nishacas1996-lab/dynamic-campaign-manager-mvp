@@ -263,8 +263,18 @@ function Dashboard() {
                           <td className="px-4 py-3 align-top text-right tabular-nums font-mono text-xs">
                             ${Number(li.bid).toFixed(2)}
                           </td>
-                          <td className="px-4 py-3 pr-4 align-top text-right tabular-nums font-mono text-xs">
+                          <td className="px-4 py-3 align-top text-right tabular-nums font-mono text-xs">
                             ${Number(li.daily_budget).toFixed(0)}
+                          </td>
+                          <td className="px-4 py-3 pr-4 align-top text-right">
+                            <button
+                              onClick={() => setOverrideItem(li)}
+                              className="inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-mono uppercase tracking-wider border border-border bg-surface-2 hover:bg-surface-2/60 hover:border-primary/40 transition-colors"
+                              title="Override state"
+                            >
+                              <Settings2 className="h-3 w-3" />
+                              Override
+                            </button>
                           </td>
                         </tr>
                       );
