@@ -85,6 +85,39 @@ function Dashboard() {
   const [logs, setLogs] = useState<TransitionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [overrideItem, setOverrideItem] = useState<LineItem | null>(null);
+  const [cycling, setCycling] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+
+  async function refresh() {
+    const [l, w, t] = await Promise.all([
+      supabase.from("line_items").select("*"),
+      supabase.from("weather_cache").select("*"),
+      supabase.from("transition_logs").select("*").order("triggered_at", { ascending: false }).limit(200),
+    ]);
+    setItems((l.data ?? []) as LineItem[]);
+    setWeather((w.data ?? []) as Weather[]);
+    setLogs((t.data ?? []) as TransitionLog[]);
+    setLastSync(new Date());
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  async function runCycle() {
+    if (cycling) return;
+    setCycling(true);
+    try {
+      const { error } = await supabase.functions.invoke("run-cycle", { body: {} });
+      if (error) console.error("run-cycle error", error);
+      await refresh();
+    } finally {
+      setCycling(false);
+    }
+  }
 
   async function applyOverride(item: LineItem, toState: "active" | "paused", note: string) {
     const fromState = item.state;
@@ -119,20 +152,6 @@ function Dashboard() {
     if (logRow) setLogs((prev) => [logRow as TransitionLog, ...prev]);
     setOverrideItem(null);
   }
-
-  useEffect(() => {
-    (async () => {
-      const [l, w, t] = await Promise.all([
-        supabase.from("line_items").select("*"),
-        supabase.from("weather_cache").select("*"),
-        supabase.from("transition_logs").select("*").order("triggered_at", { ascending: false }).limit(200),
-      ]);
-      setItems((l.data ?? []) as LineItem[]);
-      setWeather((w.data ?? []) as Weather[]);
-      setLogs((t.data ?? []) as TransitionLog[]);
-      setLoading(false);
-    })();
-  }, []);
 
   const weatherByCity = new Map(weather.map((w) => [w.city, w]));
   const itemMap = new Map(items.map((i) => [i.id, i]));
