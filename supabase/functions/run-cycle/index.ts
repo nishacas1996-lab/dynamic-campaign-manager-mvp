@@ -43,8 +43,8 @@ function decide(creative: string, w: { temp_c: number; precip_mm: number }): { s
       ? { state: "active", reason: `Precipitation ${w.precip_mm}mm — rainy-day creative active.` }
       : { state: "paused", reason: `Precipitation ${w.precip_mm}mm under 1mm threshold — paused.` };
   }
-  // refresh_anytime
-  return { state: "active", reason: `Evergreen creative — runs across all conditions.` };
+  // refresh_anytime — handled contextually per city (see cycle loop).
+  return { state: "paused", reason: `Evergreen creative — gated by other creatives in the city.` };
 }
 
 Deno.serve(async (req) => {
