@@ -14,7 +14,118 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      audit_log: {
+        Row: {
+          created_at: string
+          from_state: string
+          id: string
+          line_item_id: string
+          reason: string
+          to_state: string
+        }
+        Insert: {
+          created_at?: string
+          from_state: string
+          id?: string
+          line_item_id: string
+          reason: string
+          to_state: string
+        }
+        Update: {
+          created_at?: string
+          from_state?: string
+          id?: string
+          line_item_id?: string
+          reason?: string
+          to_state?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_line_item_id_fkey"
+            columns: ["line_item_id"]
+            isOneToOne: false
+            referencedRelation: "line_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      cities: {
+        Row: {
+          condition: string
+          humidity: number
+          id: string
+          name: string
+          temp_c: number
+          updated_at: string
+          wind_kph: number
+        }
+        Insert: {
+          condition: string
+          humidity: number
+          id?: string
+          name: string
+          temp_c: number
+          updated_at?: string
+          wind_kph: number
+        }
+        Update: {
+          condition?: string
+          humidity?: number
+          id?: string
+          name?: string
+          temp_c?: number
+          updated_at?: string
+          wind_kph?: number
+        }
+        Relationships: []
+      }
+      line_items: {
+        Row: {
+          budget_usd: number
+          city_id: string
+          creative: string
+          ctr: number
+          id: string
+          impressions: number
+          reason: string
+          spend_usd: number
+          state: string
+          updated_at: string
+        }
+        Insert: {
+          budget_usd?: number
+          city_id: string
+          creative: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          reason: string
+          spend_usd?: number
+          state: string
+          updated_at?: string
+        }
+        Update: {
+          budget_usd?: number
+          city_id?: string
+          creative?: string
+          ctr?: number
+          id?: string
+          impressions?: number
+          reason?: string
+          spend_usd?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "line_items_city_id_fkey"
+            columns: ["city_id"]
+            isOneToOne: false
+            referencedRelation: "cities"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
