@@ -1,1 +1,4 @@
 project_id = "arcymlsmegwbilofejux"
+
+[functions.run-cycle]
+verify_jwt = false
