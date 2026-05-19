@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Cloud, CloudRain, CloudSnow, Sun, Zap, Droplets, Thermometer,
-  Activity, PauseCircle, PlayCircle, History, Radio,
+  Activity, PauseCircle, PlayCircle, History, Radio, Settings2, X,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -84,6 +84,41 @@ function Dashboard() {
   const [weather, setWeather] = useState<Weather[]>([]);
   const [logs, setLogs] = useState<TransitionLog[]>([]);
   const [loading, setLoading] = useState(true);
+  const [overrideItem, setOverrideItem] = useState<LineItem | null>(null);
+
+  async function applyOverride(item: LineItem, toState: "active" | "paused", note: string) {
+    const fromState = item.state;
+    const w = weatherByCity.get(item.city);
+    const reason = `MANUAL OVERRIDE: ${note.trim() || "no reason provided"}`;
+    const snap = w
+      ? { city: w.city, temp_c: w.temp_c, precip_mm: w.precip_mm, condition: w.condition }
+      : { city: item.city };
+
+    const { data: updated, error: upErr } = await supabase
+      .from("line_items")
+      .update({ state: toState, updated_at: new Date().toISOString() })
+      .eq("id", item.id)
+      .select()
+      .single();
+    if (upErr) { console.error(upErr); return; }
+
+    const { data: logRow, error: logErr } = await supabase
+      .from("transition_logs")
+      .insert({
+        line_item_id: item.id,
+        from_state: fromState,
+        to_state: toState,
+        reason,
+        weather_snap: snap,
+      })
+      .select()
+      .single();
+    if (logErr) console.error(logErr);
+
+    setItems((prev) => prev.map((i) => (i.id === item.id ? (updated as LineItem) : i)));
+    if (logRow) setLogs((prev) => [logRow as TransitionLog, ...prev]);
+    setOverrideItem(null);
+  }
 
   useEffect(() => {
     (async () => {
@@ -187,7 +222,8 @@ function Dashboard() {
                     <th className="text-left px-4 py-2.5">State</th>
                     <th className="text-left px-4 py-2.5 w-[36%]">Last Reason</th>
                     <th className="text-right px-4 py-2.5">Bid</th>
-                    <th className="text-right px-4 py-2.5 pr-4">Budget</th>
+                    <th className="text-right px-4 py-2.5">Budget</th>
+                    <th className="text-right px-4 py-2.5 pr-4 w-[1%]"></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -227,8 +263,18 @@ function Dashboard() {
                           <td className="px-4 py-3 align-top text-right tabular-nums font-mono text-xs">
                             ${Number(li.bid).toFixed(2)}
                           </td>
-                          <td className="px-4 py-3 pr-4 align-top text-right tabular-nums font-mono text-xs">
+                          <td className="px-4 py-3 align-top text-right tabular-nums font-mono text-xs">
                             ${Number(li.daily_budget).toFixed(0)}
+                          </td>
+                          <td className="px-4 py-3 pr-4 align-top text-right">
+                            <button
+                              onClick={() => setOverrideItem(li)}
+                              className="inline-flex items-center gap-1 rounded px-2 py-1 text-[10px] font-mono uppercase tracking-wider border border-border bg-surface-2 hover:bg-surface-2/60 hover:border-primary/40 transition-colors"
+                              title="Override state"
+                            >
+                              <Settings2 className="h-3 w-3" />
+                              Override
+                            </button>
                           </td>
                         </tr>
                       );
@@ -311,6 +357,124 @@ function Dashboard() {
           </div>
         </section>
       </main>
+      {overrideItem && (
+        <OverrideModal
+          item={overrideItem}
+          onClose={() => setOverrideItem(null)}
+          onConfirm={(to, note) => applyOverride(overrideItem, to, note)}
+        />
+      )}
+    </div>
+  );
+}
+
+function OverrideModal({
+  item, onClose, onConfirm,
+}: {
+  item: LineItem;
+  onClose: () => void;
+  onConfirm: (to: "active" | "paused", note: string) => void | Promise<void>;
+}) {
+  const [target, setTarget] = useState<"active" | "paused">(
+    item.state === "active" ? "paused" : "active"
+  );
+  const [note, setNote] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-background/70 backdrop-blur-sm p-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-lg border border-border bg-card shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between px-5 py-3 border-b border-border">
+          <div>
+            <div className="text-xs font-mono uppercase tracking-wider text-muted-foreground">
+              Manual Override
+            </div>
+            <div className="mt-0.5 text-sm font-medium">
+              {item.city} · {CREATIVE_LABEL[item.creative_id] ?? item.creative_id}
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="rounded p-1 text-muted-foreground hover:bg-surface-2 hover:text-foreground"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4 space-y-4">
+          <div>
+            <div className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground mb-2">
+              Force state
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              {(["active", "paused"] as const).map((s) => {
+                const selected = target === s;
+                const isActive = s === "active";
+                return (
+                  <button
+                    key={s}
+                    onClick={() => setTarget(s)}
+                    className={`flex items-center justify-center gap-2 rounded border px-3 py-2 text-xs font-mono uppercase tracking-wider transition-colors ${
+                      selected
+                        ? isActive
+                          ? "bg-success/15 text-success border-success/40"
+                          : "bg-warning/15 text-warning border-warning/40"
+                        : "bg-surface-2 text-muted-foreground border-border hover:border-border"
+                    }`}
+                  >
+                    {isActive ? <PlayCircle className="h-3.5 w-3.5" /> : <PauseCircle className="h-3.5 w-3.5" />}
+                    {s}
+                  </button>
+                );
+              })}
+            </div>
+            <div className="mt-2 text-[10px] font-mono text-muted-foreground">
+              current: <span className="text-foreground">{item.state}</span>
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[10px] font-mono uppercase tracking-wider text-muted-foreground">
+              Reason (optional)
+            </label>
+            <textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value.slice(0, 280))}
+              rows={3}
+              placeholder="e.g. promo launch, manual QA, advertiser request…"
+              className="mt-1.5 w-full rounded border border-border bg-surface-2 px-3 py-2 text-xs font-mono text-foreground placeholder:text-muted-foreground/60 focus:outline-none focus:border-primary/50 resize-none"
+            />
+            <div className="mt-1 text-[10px] font-mono text-muted-foreground">
+              Logged as <span className="text-foreground">MANUAL OVERRIDE: …</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-2 px-5 py-3 border-t border-border bg-surface-2/40">
+          <button
+            onClick={onClose}
+            className="rounded px-3 py-1.5 text-xs font-mono uppercase tracking-wider text-muted-foreground hover:text-foreground"
+          >
+            Cancel
+          </button>
+          <button
+            disabled={submitting}
+            onClick={async () => {
+              setSubmitting(true);
+              try { await onConfirm(target, note); } finally { setSubmitting(false); }
+            }}
+            className="inline-flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-mono uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+          >
+            {submitting ? "Applying…" : "Apply override"}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

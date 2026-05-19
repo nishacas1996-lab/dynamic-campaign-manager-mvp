@@ -1,0 +1,2 @@
+CREATE POLICY "public update line_items" ON public.line_items FOR UPDATE USING (true) WITH CHECK (true);
+CREATE POLICY "public insert transition_logs" ON public.transition_logs FOR INSERT WITH CHECK (true);
