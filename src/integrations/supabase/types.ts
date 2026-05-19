@@ -14,34 +14,67 @@ export type Database = {
   }
   public: {
     Tables: {
-      audit_log: {
+      line_items: {
         Row: {
-          created_at: string
-          from_state: string
-          id: string
-          line_item_id: string
-          reason: string
-          to_state: string
+          bid: number
+          city: string
+          creative_id: string
+          daily_budget: number
+          id: number
+          state: string
+          updated_at: string
         }
         Insert: {
-          created_at?: string
-          from_state: string
-          id?: string
-          line_item_id: string
-          reason: string
-          to_state: string
+          bid: number
+          city: string
+          creative_id: string
+          daily_budget: number
+          id?: number
+          state?: string
+          updated_at?: string
         }
         Update: {
-          created_at?: string
+          bid?: number
+          city?: string
+          creative_id?: string
+          daily_budget?: number
+          id?: number
+          state?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      transition_logs: {
+        Row: {
+          from_state: string
+          id: number
+          line_item_id: number
+          reason: string
+          to_state: string
+          triggered_at: string
+          weather_snap: Json | null
+        }
+        Insert: {
+          from_state: string
+          id?: number
+          line_item_id: number
+          reason: string
+          to_state: string
+          triggered_at?: string
+          weather_snap?: Json | null
+        }
+        Update: {
           from_state?: string
-          id?: string
-          line_item_id?: string
+          id?: number
+          line_item_id?: number
           reason?: string
           to_state?: string
+          triggered_at?: string
+          weather_snap?: Json | null
         }
         Relationships: [
           {
-            foreignKeyName: "audit_log_line_item_id_fkey"
+            foreignKeyName: "transition_logs_line_item_id_fkey"
             columns: ["line_item_id"]
             isOneToOne: false
             referencedRelation: "line_items"
@@ -49,82 +82,32 @@ export type Database = {
           },
         ]
       }
-      cities: {
+      weather_cache: {
         Row: {
+          city: string
           condition: string
-          humidity: number
-          id: string
-          name: string
+          fetched_at: string
+          id: number
+          precip_mm: number
           temp_c: number
-          updated_at: string
-          wind_kph: number
         }
         Insert: {
+          city: string
           condition: string
-          humidity: number
-          id?: string
-          name: string
+          fetched_at?: string
+          id?: number
+          precip_mm: number
           temp_c: number
-          updated_at?: string
-          wind_kph: number
         }
         Update: {
+          city?: string
           condition?: string
-          humidity?: number
-          id?: string
-          name?: string
+          fetched_at?: string
+          id?: number
+          precip_mm?: number
           temp_c?: number
-          updated_at?: string
-          wind_kph?: number
         }
         Relationships: []
-      }
-      line_items: {
-        Row: {
-          budget_usd: number
-          city_id: string
-          creative: string
-          ctr: number
-          id: string
-          impressions: number
-          reason: string
-          spend_usd: number
-          state: string
-          updated_at: string
-        }
-        Insert: {
-          budget_usd?: number
-          city_id: string
-          creative: string
-          ctr?: number
-          id?: string
-          impressions?: number
-          reason: string
-          spend_usd?: number
-          state: string
-          updated_at?: string
-        }
-        Update: {
-          budget_usd?: number
-          city_id?: string
-          creative?: string
-          ctr?: number
-          id?: string
-          impressions?: number
-          reason?: string
-          spend_usd?: number
-          state?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "line_items_city_id_fkey"
-            columns: ["city_id"]
-            isOneToOne: false
-            referencedRelation: "cities"
-            referencedColumns: ["id"]
-          },
-        ]
       }
     }
     Views: {
