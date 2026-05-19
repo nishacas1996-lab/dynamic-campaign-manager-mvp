@@ -98,6 +98,20 @@ Deno.serve(async (req) => {
         decisions.set(li.id, decide(li.creative_id, w));
       }
 
+      // Mutual exclusion: rainy_day wins over beat_the_heat when both qualify.
+      const rainyItem = cityItems.find((i) => i.creative_id === "rainy_day");
+      const heatItem = cityItems.find((i) => i.creative_id === "beat_the_heat");
+      if (rainyItem && heatItem) {
+        const rainyD = decisions.get(rainyItem.id);
+        const heatD = decisions.get(heatItem.id);
+        if (rainyD?.state === "active" && heatD?.state === "active") {
+          decisions.set(heatItem.id, {
+            state: "paused",
+            reason: `Rainy-day creative is active in ${city} — beat-the-heat paused (mutually exclusive).`,
+          });
+        }
+      }
+
       // refresh_anytime runs only if no other creative in this city is active.
       const anyOtherActive = Array.from(decisions.values()).some((d) => d.state === "active");
       for (const li of cityItems) {
