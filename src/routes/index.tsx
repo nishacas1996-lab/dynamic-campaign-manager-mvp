@@ -45,6 +45,15 @@ function conditionIcon(c: string) {
   return Sun;
 }
 
+function conditionBadge(w?: { temp_c: number; precip_mm: number }) {
+  if (!w) return { emoji: "·", label: "—", className: "bg-muted text-muted-foreground border-border" };
+  if (w.precip_mm >= 1)
+    return { emoji: "🌧", label: "Rainy", className: "bg-accent/15 text-accent border-accent/30" };
+  if (w.temp_c >= 30)
+    return { emoji: "🔥", label: "Hot", className: "bg-destructive/15 text-destructive border-destructive/30" };
+  return { emoji: "✅", label: "Normal", className: "bg-success/15 text-success border-success/30" };
+}
+
 function fmtAgo(ts: string) {
   const s = Math.floor((Date.now() - new Date(ts).getTime()) / 1000);
   if (s < 60) return `${s}s ago`;
