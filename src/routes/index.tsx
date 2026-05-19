@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import {
   Cloud, CloudRain, CloudSnow, Sun, Zap, Droplets, Thermometer,
-  Activity, PauseCircle, PlayCircle, History, Radio, Settings2, X,
+  Activity, PauseCircle, PlayCircle, History, Radio, Settings2, X, Play, Loader2,
 } from "lucide-react";
 
 export const Route = createFileRoute("/")({
@@ -85,6 +85,39 @@ function Dashboard() {
   const [logs, setLogs] = useState<TransitionLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [overrideItem, setOverrideItem] = useState<LineItem | null>(null);
+  const [cycling, setCycling] = useState(false);
+  const [lastSync, setLastSync] = useState<Date | null>(null);
+
+  async function refresh() {
+    const [l, w, t] = await Promise.all([
+      supabase.from("line_items").select("*"),
+      supabase.from("weather_cache").select("*"),
+      supabase.from("transition_logs").select("*").order("triggered_at", { ascending: false }).limit(200),
+    ]);
+    setItems((l.data ?? []) as LineItem[]);
+    setWeather((w.data ?? []) as Weather[]);
+    setLogs((t.data ?? []) as TransitionLog[]);
+    setLastSync(new Date());
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    refresh();
+    const id = setInterval(refresh, 30_000);
+    return () => clearInterval(id);
+  }, []);
+
+  async function runCycle() {
+    if (cycling) return;
+    setCycling(true);
+    try {
+      const { error } = await supabase.functions.invoke("run-cycle", { body: {} });
+      if (error) console.error("run-cycle error", error);
+      await refresh();
+    } finally {
+      setCycling(false);
+    }
+  }
 
   async function applyOverride(item: LineItem, toState: "active" | "paused", note: string) {
     const fromState = item.state;
@@ -120,20 +153,6 @@ function Dashboard() {
     setOverrideItem(null);
   }
 
-  useEffect(() => {
-    (async () => {
-      const [l, w, t] = await Promise.all([
-        supabase.from("line_items").select("*"),
-        supabase.from("weather_cache").select("*"),
-        supabase.from("transition_logs").select("*").order("triggered_at", { ascending: false }).limit(200),
-      ]);
-      setItems((l.data ?? []) as LineItem[]);
-      setWeather((w.data ?? []) as Weather[]);
-      setLogs((t.data ?? []) as TransitionLog[]);
-      setLoading(false);
-    })();
-  }, []);
-
   const weatherByCity = new Map(weather.map((w) => [w.city, w]));
   const itemMap = new Map(items.map((i) => [i.id, i]));
   const cities = Array.from(new Set(items.map((i) => i.city))).sort();
@@ -164,6 +183,20 @@ function Dashboard() {
             <Stat label="ACTIVE" value={`${activeCount}/${items.length}`} accent="success" />
             <Stat label="BUDGET LIVE" value={`$${activeBudget}`} />
             <Stat label="BUDGET TOTAL" value={`$${totalBudget}`} />
+            <div className="flex flex-col items-end">
+              <span className="text-[10px] text-muted-foreground tracking-wider">SYNC</span>
+              <span className="tabular-nums text-muted-foreground">
+                {lastSync ? `${fmtAgo(lastSync.toISOString())}` : "—"}
+              </span>
+            </div>
+            <button
+              onClick={runCycle}
+              disabled={cycling}
+              className="inline-flex items-center gap-1.5 rounded bg-primary px-3 py-1.5 text-xs font-mono uppercase tracking-wider text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+            >
+              {cycling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Play className="h-3.5 w-3.5" />}
+              {cycling ? "Running…" : "Run Decision Cycle"}
+            </button>
             <div className="flex items-center gap-2 text-success">
               <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
               LIVE
