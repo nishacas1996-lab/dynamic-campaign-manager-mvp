@@ -23,7 +23,7 @@ async function fetchWeather(city: string): Promise<{ temp_c: number; precip_mm: 
   const data = await res.json();
   const temp_c = +(data.current?.temperature_2m ?? 0);
   const precip_mm = +(data.current?.precipitation ?? 0);
-  const condition = precip_mm >= 1 ? "rain" : temp_c >= 30 ? "hot" : "clear";
+  const condition = precip_mm > 0 ? "Rainy" : temp_c >= 35 ? "Hot" : "Normal";
   return { temp_c, precip_mm, condition };
 }
 
