@@ -28,17 +28,17 @@ async function fetchWeather(city: string): Promise<{ temp_c: number; precip_mm: 
 }
 
 function decide(creative: string, w: { temp_c: number; precip_mm: number }): { state: "active" | "paused"; reason: string } {
-  const hot = w.temp_c >= 30;
-  const rainy = w.precip_mm >= 1;
+  const hot = w.temp_c >= 35;
+  const rainy = w.precip_mm > 0;
   if (creative === "beat_the_heat") {
     return hot
-      ? { state: "active", reason: `Temperature ${w.temp_c}°C ≥ 30°C — heat-relief creative is in window.` }
-      : { state: "paused", reason: `Temperature ${w.temp_c}°C below 30°C threshold — creative paused.` };
+      ? { state: "active", reason: `Temperature ${w.temp_c}°C ≥ 35°C — heat-relief creative is in window.` }
+      : { state: "paused", reason: `Temperature ${w.temp_c}°C below 35°C threshold — creative paused.` };
   }
   if (creative === "rainy_day") {
     return rainy
-      ? { state: "active", reason: `Precipitation ${w.precip_mm}mm — rainy-day creative active.` }
-      : { state: "paused", reason: `Precipitation ${w.precip_mm}mm under 1mm threshold — paused.` };
+      ? { state: "active", reason: `Precipitation ${w.precip_mm}mm in the last hour — rainy-day creative active.` }
+      : { state: "paused", reason: `No precipitation in the last hour — paused.` };
   }
   // refresh_anytime — handled contextually per city (see cycle loop).
   return { state: "paused", reason: `Evergreen creative — gated by other creatives in the city.` };
