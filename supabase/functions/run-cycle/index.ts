@@ -56,8 +56,14 @@ Deno.serve(async (req) => {
     // 1. Refresh weather cache for each city.
     const now = new Date().toISOString();
     const weatherRows: any[] = [];
-    for (const city of CITIES) {
-      const w = syntheticWeather(city);
+    for (const city of Object.keys(CITIES)) {
+      let w: { temp_c: number; precip_mm: number; condition: string };
+      try {
+        w = await fetchWeather(city);
+      } catch (err) {
+        console.error(`weather fetch failed for ${city}, skipping:`, err);
+        continue;
+      }
       const { data: existing } = await supabase
         .from("weather_cache").select("id").eq("city", city).maybeSingle();
       if (existing) {
