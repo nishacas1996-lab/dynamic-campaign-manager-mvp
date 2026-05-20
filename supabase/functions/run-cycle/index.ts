@@ -8,26 +8,23 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, GET, OPTIONS",
 };
 
-const CITIES = ["Mumbai", "Delhi", "Bangalore", "Chennai"];
+const CITIES: Record<string, { lat: number; lon: number }> = {
+  Mumbai:    { lat: 19.076, lon: 72.877 },
+  Delhi:     { lat: 28.613, lon: 77.209 },
+  Bangalore: { lat: 12.971, lon: 77.594 },
+  Chennai:   { lat: 13.082, lon: 80.270 },
+};
 
-function jitter(base: number, spread: number) {
-  return +(base + (Math.random() - 0.5) * spread).toFixed(1);
-}
-
-function syntheticWeather(city: string) {
-  // Vary the synthetic conditions to keep cycles interesting.
-  const profiles: Record<string, { temp: number; precip: number; cond: string }> = {
-    Mumbai:    { temp: jitter(31, 6),  precip: Math.random() < 0.45 ? jitter(3, 4) : 0, cond: "humid" },
-    Delhi:     { temp: jitter(34, 8),  precip: Math.random() < 0.15 ? jitter(1.5, 2) : 0, cond: "hot" },
-    Bangalore: { temp: jitter(26, 4),  precip: Math.random() < 0.40 ? jitter(2, 3) : 0, cond: "cloudy" },
-    Chennai:   { temp: jitter(32, 5),  precip: Math.random() < 0.35 ? jitter(2.5, 4) : 0, cond: "humid" },
-  };
-  const p = profiles[city] ?? { temp: jitter(28, 5), precip: 0, cond: "clear" };
-  return {
-    temp_c: Math.max(15, p.temp),
-    precip_mm: Math.max(0, +p.precip.toFixed(1)),
-    condition: p.precip >= 1 ? "rain" : p.temp >= 32 ? "hot" : p.cond,
-  };
+async function fetchWeather(city: string): Promise<{ temp_c: number; precip_mm: number; condition: string }> {
+  const coords = CITIES[city];
+  const url = `https://api.open-meteo.com/v1/forecast?latitude=${coords.lat}&longitude=${coords.lon}&current=temperature_2m,precipitation&timezone=Asia/Kolkata`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Open-Meteo ${res.status} for ${city}`);
+  const data = await res.json();
+  const temp_c = +(data.current?.temperature_2m ?? 0);
+  const precip_mm = +(data.current?.precipitation ?? 0);
+  const condition = precip_mm >= 1 ? "rain" : temp_c >= 30 ? "hot" : "clear";
+  return { temp_c, precip_mm, condition };
 }
 
 function decide(creative: string, w: { temp_c: number; precip_mm: number }): { state: "active" | "paused"; reason: string } {
