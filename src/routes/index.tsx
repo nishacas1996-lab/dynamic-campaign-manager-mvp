@@ -47,9 +47,9 @@ function conditionIcon(c: string) {
 
 function conditionBadge(w?: { temp_c: number; precip_mm: number }) {
   if (!w) return { emoji: "·", label: "—", className: "bg-muted text-muted-foreground border-border" };
-  if (w.precip_mm >= 1)
+  if (w.precip_mm > 0)
     return { emoji: "🌧", label: "Rainy", className: "bg-accent/15 text-accent border-accent/30" };
-  if (w.temp_c >= 30)
+  if (w.temp_c >= 35)
     return { emoji: "🔥", label: "Hot", className: "bg-destructive/15 text-destructive border-destructive/30" };
   return { emoji: "✅", label: "Normal", className: "bg-success/15 text-success border-success/30" };
 }
@@ -64,17 +64,17 @@ function fmtAgo(ts: string) {
 
 function reasonFor(item: LineItem, w?: Weather) {
   if (!w) return "Awaiting weather data.";
-  const hot = w.temp_c >= 30;
-  const rainy = w.precip_mm >= 1;
+  const hot = w.temp_c >= 35;
+  const rainy = w.precip_mm > 0;
   if (item.creative_id === "beat_the_heat") {
     return hot
-      ? `Temperature ${w.temp_c}°C ≥ 30°C — heat-relief creative is in window.`
-      : `Temperature ${w.temp_c}°C below 30°C threshold — creative paused.`;
+      ? `Temperature ${w.temp_c}°C ≥ 35°C — heat-relief creative is in window.`
+      : `Temperature ${w.temp_c}°C below 35°C threshold — creative paused.`;
   }
   if (item.creative_id === "rainy_day") {
     return rainy
-      ? `Precipitation ${w.precip_mm}mm — rainy-day creative active.`
-      : `Precipitation ${w.precip_mm}mm under 1mm threshold — paused.`;
+      ? `Precipitation ${w.precip_mm}mm in the last hour — rainy-day creative active.`
+      : `No precipitation in the last hour — paused.`;
   }
   return `Evergreen creative — runs across all conditions in ${w.city}.`;
 }
